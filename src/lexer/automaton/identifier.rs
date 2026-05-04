@@ -5,7 +5,7 @@ use crate::lexer::automaton::{Automaton, buf_push};
 use crate::lexer::result::{Error as LexerError, Result as LexerResult};
 use crate::token::Token;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct IdentifierAutomaton {
     keywords: HashSet<&'static str>,
 }
@@ -15,6 +15,12 @@ impl IdentifierAutomaton {
         let keywords = ["if", "else", "i32"].iter().cloned().collect();
 
         Self { keywords }
+    }
+}
+
+impl Default for IdentifierAutomaton {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
