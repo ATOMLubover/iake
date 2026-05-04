@@ -4,9 +4,26 @@ pub mod operator;
 pub mod punctuation;
 
 use crate::input::Input;
-use crate::lexer::result::Result;
+use crate::lexer::result::Result as LexerResult;
 
 pub trait Automaton {
     // try_accept 尝试接受输入，如果成功则返回 Ok(Token)，否则返回 Err(Error)
-    fn try_accept(&mut self, buf: &mut [char], input: &mut impl Input) -> Result;
+    fn try_accept(
+        &mut self,
+        buf: &mut [char],
+        maxlen: usize,
+        input: &mut impl Input,
+    ) -> LexerResult;
+
+    // acceptable 判断一个字符是否可以被当前自动机接受，如果可以接受则返回 true，否则返回 false
+    fn acceptable(&self, c: char) -> bool;
+}
+
+fn buf_push(buf: &mut [char], maxlen: usize, idx: &mut usize, c: char) {
+    if *idx >= maxlen {
+        return;
+    }
+
+    buf[*idx] = c;
+    *idx += 1;
 }
