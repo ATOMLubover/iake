@@ -1,3 +1,3 @@
-mod input;
-mod lexer;
-mod token;
+pub mod input;
+pub mod lexer;
+pub mod token;

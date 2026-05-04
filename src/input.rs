@@ -5,8 +5,8 @@ pub mod test_input;
 
 #[derive(Default, Copy, Clone)]
 pub struct Cursor {
-    line: usize,
-    column: usize,
+    pub line: usize,
+    pub column: usize,
 }
 
 pub trait Input {

@@ -1,46 +1,3 @@
-# 目标
-
-## Keyword
-
-- if
-- else
-
-- i32
-
-## Punctuation
-
-- {
-- }
-- (
-- )
-- ;
-
-## Operator
-
-- =
-- ==
-
-## Integer
-
-- 114514
-
-## 目标处理串
-
-```text
-i32 a = 1;
-i32 b = 0;
-
-if (a == 1) {
-    # 单行注释
-    b = 1;
-} else {
-    b = 2;
-}
-```
-
-## 目标结果串
-
-```text
 <Keyword, "i32"><Identifier, "a"><Operator, "="><Integer, "1"><Punctuation, ";">
 <Keyword, "i32"><Identifier, "b"><Operator, "="><Integer, "0"><Punctuation, ";">
 <Keyword, "if"><Punctuation, "("><Identifier, "a"><Operator, "=="><Integer, "1"><Punctuation, ")"><Punctuation, "{">
@@ -48,4 +5,3 @@ if (a == 1) {
 <Punctuation, "}"><Keyword, "else"><Punctuation, "{">
     <Identifier, "b"><Operator, "="><Integer, "2"><Punctuation, ";">
 <Punctuation, "}">
-```
