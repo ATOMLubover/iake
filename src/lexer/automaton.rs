@@ -27,3 +27,21 @@ fn buf_push(buf: &mut [char], maxlen: usize, idx: &mut usize, c: char) {
     buf[*idx] = c;
     *idx += 1;
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::input::test_input::TestInput;
+    use crate::lexer::result::Result as LexerResult;
+
+    pub fn try_accept<A>(input: &str, mut automaton: A) -> (LexerResult, TestInput)
+    where
+        A: crate::lexer::automaton::Automaton,
+    {
+        let mut buf = ['\0'; 1024];
+        let mut input = TestInput::new(input);
+
+        let result = automaton.try_accept(&mut buf, 1024, &mut input);
+
+        (result, input)
+    }
+}
