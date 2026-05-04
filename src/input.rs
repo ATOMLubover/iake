@@ -3,8 +3,8 @@ pub mod file_input;
 #[cfg(test)]
 pub mod test_input;
 
-#[derive(Default)]
-pub struct Position {
+#[derive(Default, Copy, Clone)]
+pub struct Cursor {
     line: usize,
     column: usize,
 }
@@ -19,6 +19,6 @@ pub trait Input {
     // is_eof 检查是否已经到达输入的末尾
     fn is_eof(&self) -> bool;
 
-    // current_position 返回当前游标的位置
-    fn current_position(&self) -> Position;
+    // cursor 返回当前游标的位置
+    fn cursor(&self) -> Cursor;
 }

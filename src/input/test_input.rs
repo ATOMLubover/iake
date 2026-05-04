@@ -1,4 +1,4 @@
-use crate::input::{Input, Position};
+use crate::input::{Cursor, Input};
 
 pub struct TestInput {
     chars: Vec<char>,
@@ -29,7 +29,7 @@ impl Input for TestInput {
         self.idx >= self.chars.len()
     }
 
-    fn current_position(&self) -> Position {
-        Position::default()
+    fn cursor(&self) -> Cursor {
+        Cursor::default()
     }
 }

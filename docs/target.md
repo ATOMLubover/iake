@@ -5,6 +5,8 @@
 - if
 - else
 
+- i32
+
 ## Punctuation
 
 - {
@@ -25,8 +27,8 @@
 ## 目标处理串
 
 ```text
-int a = 1;
-int b = 0;
+i32 a = 1;
+i32 b = 0;
 
 if (a == 1) {
     b = 1;

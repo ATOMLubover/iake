@@ -1,7 +1,7 @@
 pub mod automaton;
 pub mod result;
 
-use crate::input::{Input, Position};
+use crate::input::{Cursor, Input};
 use crate::lexer::automaton::Automaton as _;
 use crate::lexer::automaton::identifier::IdentifierAutomaton;
 use crate::lexer::automaton::integer::IntegerAutomaton;
@@ -65,8 +65,8 @@ where
         }
     }
 
-    pub fn current_position(&self) -> Position {
-        self.input.current_position()
+    pub fn current_position(&self) -> Cursor {
+        self.input.cursor()
     }
 
     fn left_trim(&mut self) {
@@ -77,4 +77,12 @@ where
             self.input.advance();
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    // 异常测试案例：
+    // - 输入 " @ "，应该接受失败，返回 LexerError::UnexpectedChar('@')
+    // - 输入 "   "，（全空格）应该接受失败，返回 LexerError::EndOfInput
+    // - 输入 "a=1"，（无空格标识符接算式）返回 Token::Identifier("a")，指针停在 '='
 }

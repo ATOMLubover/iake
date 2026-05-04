@@ -1,3 +1,4 @@
+use crate::input::Input;
 use crate::lexer::automaton::{Automaton, buf_push};
 use crate::lexer::result::{Error as LexerError, Result as LexerResult};
 use crate::token::Token;
@@ -32,7 +33,7 @@ impl Automaton for IntegerAutomaton {
         &mut self,
         buf: &mut [char],
         maxlen: usize,
-        input: &mut impl crate::input::Input,
+        input: &mut impl Input,
     ) -> LexerResult {
         // 数字的 regex 为 0|[1-9][0-9]*
         // 对应 DFA 较为简单：
@@ -52,7 +53,7 @@ impl Automaton for IntegerAutomaton {
                 0 => {
                     // 状态 S
                     // 检查输入是否为 0-9，如果不是，直接抛出错误
-                    if !matches!(c, '0' | '1'..='9') {
+                    if !self.acceptable(c) {
                         return Err(LexerError::InvalidChar(c));
                     }
 
@@ -106,6 +107,7 @@ impl Automaton for IntegerAutomaton {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use crate::input::Input;
     use crate::input::test_input::TestInput;
 
