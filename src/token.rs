@@ -1,93 +1,118 @@
 pub enum Token {
-    Keyword(String),
+    Keyword(KeywordToken),
     Identifier(String),
     Integer(i64),
-    Operator(String),
-    Punctuation(String),
+    Operator(OperatorToken),
+    Punctuation(PunctuationToken),
 }
 
-/// 单词编码表：为每种 token 分配唯一的整数编号，供语法分析器使用。
-///
-/// 编码范围分配：
-///   1-3   关键字 (Keyword)
-///   4     标识符 (Identifier)
-///   5     整数   (Integer)
-///   6-8   运算符 (Operator)
-///   9-13  分隔符 (Punctuation)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u8)]
-pub enum TokenKind {
-    KeywordI32 = 1,
-    KeywordIf = 2,
-    KeywordElse = 3,
-
-    Identifier = 4,
-
-    Integer = 5,
-
-    OperatorEq = 6,     // ==
-    OperatorAssign = 7, // =
-    OperatorMul = 8,    // *
-
-    ParenLeft = 9,   // (
-    ParenRight = 10, // )
-    BraceLeft = 11,  // {
-    BraceRight = 12, // }
-    Semicolon = 13,  // ;
+#[derive(Debug, PartialEq, Eq)]
+pub enum KeywordToken {
+    I32,
+    If,
+    Else,
 }
 
-impl TokenKind {
-    /// 从 Token 转换到 TokenKind。Identifier 和 Integer 携带的值不参与编码区分。
-    pub fn from_token(token: &Token) -> Option<TokenKind> {
-        match token {
-            Token::Keyword(s) => match s.as_str() {
-                "i32" => Some(TokenKind::KeywordI32),
-                "if" => Some(TokenKind::KeywordIf),
-                "else" => Some(TokenKind::KeywordElse),
-                _ => None,
+#[derive(Debug, PartialEq, Eq)]
+pub enum OperatorToken {
+    Equal,  // ==
+    Assign, // =
+    Mul,    // *
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum PunctuationToken {
+    ParenLeft,  // (
+    ParenRight, // )
+    BraceLeft,  // {
+    BraceRight, // }
+    Semicolon,  // ;
+}
+
+impl std::fmt::Display for KeywordToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KeywordToken::I32 => write!(f, "i32"),
+            KeywordToken::If => write!(f, "if"),
+            KeywordToken::Else => write!(f, "else"),
+        }
+    }
+}
+
+impl std::fmt::Display for OperatorToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OperatorToken::Equal => write!(f, "=="),
+            OperatorToken::Assign => write!(f, "="),
+            OperatorToken::Mul => write!(f, "*"),
+        }
+    }
+}
+
+impl std::fmt::Display for PunctuationToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PunctuationToken::ParenLeft => write!(f, "("),
+            PunctuationToken::ParenRight => write!(f, ")"),
+            PunctuationToken::BraceLeft => write!(f, "{{"),
+            PunctuationToken::BraceRight => write!(f, "}}"),
+            PunctuationToken::Semicolon => write!(f, ";"),
+        }
+    }
+}
+
+impl Token {
+    /// 返回该 token 的单词编码（1 字节），用于语法分析器高效匹配。
+    ///
+    /// | 编码 | 名称 | Token 形式 |
+    /// |------|------|-----------|
+    /// | 1 | KeywordI32 | `i32` |
+    /// | 2 | KeywordIf | `if` |
+    /// | 3 | KeywordElse | `else` |
+    /// | 4 | Identifier | 标识符 |
+    /// | 5 | Integer | 整数 |
+    /// | 6 | OperatorEq | `==` |
+    /// | 7 | OperatorAssign | `=` |
+    /// | 8 | OperatorMul | `*` |
+    /// | 9 | ParenLeft | `(` |
+    /// | 10 | ParenRight | `)` |
+    /// | 11 | BraceLeft | `{` |
+    /// | 12 | BraceRight | `}` |
+    /// | 13 | Semicolon | `;` |
+    pub fn code(&self) -> u8 {
+        match self {
+            Token::Keyword(k) => match k {
+                KeywordToken::I32 => 1,
+                KeywordToken::If => 2,
+                KeywordToken::Else => 3,
             },
-            Token::Identifier(_) => Some(TokenKind::Identifier),
-            Token::Integer(_) => Some(TokenKind::Integer),
-            Token::Operator(s) => match s.as_str() {
-                "==" => Some(TokenKind::OperatorEq),
-                "=" => Some(TokenKind::OperatorAssign),
-                "*" => Some(TokenKind::OperatorMul),
-                _ => None,
+            Token::Identifier(_) => 4,
+            Token::Integer(_) => 5,
+            Token::Operator(op) => match op {
+                OperatorToken::Equal => 6,
+                OperatorToken::Assign => 7,
+                OperatorToken::Mul => 8,
             },
-            Token::Punctuation(s) => match s.as_str() {
-                "(" => Some(TokenKind::ParenLeft),
-                ")" => Some(TokenKind::ParenRight),
-                "{" => Some(TokenKind::BraceLeft),
-                "}" => Some(TokenKind::BraceRight),
-                ";" => Some(TokenKind::Semicolon),
-                _ => None,
+            Token::Punctuation(p) => match p {
+                PunctuationToken::ParenLeft => 9,
+                PunctuationToken::ParenRight => 10,
+                PunctuationToken::BraceLeft => 11,
+                PunctuationToken::BraceRight => 12,
+                PunctuationToken::Semicolon => 13,
             },
         }
     }
-
-    pub fn code(self) -> u8 {
-        self as u8
-    }
 }
 
-impl std::fmt::Display for TokenKind {
+impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = match self {
-            TokenKind::KeywordI32 => "KeywordI32",
-            TokenKind::KeywordIf => "KeywordIf",
-            TokenKind::KeywordElse => "KeywordElse",
-            TokenKind::Identifier => "Identifier",
-            TokenKind::Integer => "Integer",
-            TokenKind::OperatorEq => "OperatorEq(==)",
-            TokenKind::OperatorAssign => "OperatorAssign(=)",
-            TokenKind::OperatorMul => "OperatorMul(*)",
-            TokenKind::ParenLeft => "ParenLeft(()",
-            TokenKind::ParenRight => "ParenRight())",
-            TokenKind::BraceLeft => "BraceLeft({)",
-            TokenKind::BraceRight => "BraceRight(})",
-            TokenKind::Semicolon => "Semicolon(;)",
-        };
-        write!(f, "{}", name)
+        match self {
+            Token::Keyword(k) => write!(f, "Keyword({})", k),
+            Token::Identifier(s) => write!(f, "Identifier({})", s),
+            Token::Integer(i) => write!(f, "Integer({})", i),
+            Token::Operator(op) => write!(f, "Operator({})", op),
+            Token::Punctuation(p) => write!(f, "Punctuation({})", p),
+        }
     }
 }
 
@@ -97,34 +122,34 @@ mod tests {
 
     #[test]
     fn keyword_encoding() {
-        assert_eq!(TokenKind::from_token(&Token::Keyword("i32".into())).unwrap().code(), 1);
-        assert_eq!(TokenKind::from_token(&Token::Keyword("if".into())).unwrap().code(), 2);
-        assert_eq!(TokenKind::from_token(&Token::Keyword("else".into())).unwrap().code(), 3);
+        assert_eq!(Token::Keyword(KeywordToken::I32).code(), 1);
+        assert_eq!(Token::Keyword(KeywordToken::If).code(), 2);
+        assert_eq!(Token::Keyword(KeywordToken::Else).code(), 3);
     }
 
     #[test]
     fn identifier_encoding() {
-        assert_eq!(TokenKind::from_token(&Token::Identifier("x".into())).unwrap().code(), 4);
+        assert_eq!(Token::Identifier("x".into()).code(), 4);
     }
 
     #[test]
     fn integer_encoding() {
-        assert_eq!(TokenKind::from_token(&Token::Integer(42)).unwrap().code(), 5);
+        assert_eq!(Token::Integer(42).code(), 5);
     }
 
     #[test]
     fn operator_encoding() {
-        assert_eq!(TokenKind::from_token(&Token::Operator("==".into())).unwrap().code(), 6);
-        assert_eq!(TokenKind::from_token(&Token::Operator("=".into())).unwrap().code(), 7);
-        assert_eq!(TokenKind::from_token(&Token::Operator("*".into())).unwrap().code(), 8);
+        assert_eq!(Token::Operator(OperatorToken::Equal).code(), 6);
+        assert_eq!(Token::Operator(OperatorToken::Assign).code(), 7);
+        assert_eq!(Token::Operator(OperatorToken::Mul).code(), 8);
     }
 
     #[test]
     fn punctuation_encoding() {
-        assert_eq!(TokenKind::from_token(&Token::Punctuation("(".into())).unwrap().code(), 9);
-        assert_eq!(TokenKind::from_token(&Token::Punctuation(")".into())).unwrap().code(), 10);
-        assert_eq!(TokenKind::from_token(&Token::Punctuation("{".into())).unwrap().code(), 11);
-        assert_eq!(TokenKind::from_token(&Token::Punctuation("}".into())).unwrap().code(), 12);
-        assert_eq!(TokenKind::from_token(&Token::Punctuation(";".into())).unwrap().code(), 13);
+        assert_eq!(Token::Punctuation(PunctuationToken::ParenLeft).code(), 9);
+        assert_eq!(Token::Punctuation(PunctuationToken::ParenRight).code(), 10);
+        assert_eq!(Token::Punctuation(PunctuationToken::BraceLeft).code(), 11);
+        assert_eq!(Token::Punctuation(PunctuationToken::BraceRight).code(), 12);
+        assert_eq!(Token::Punctuation(PunctuationToken::Semicolon).code(), 13);
     }
 }

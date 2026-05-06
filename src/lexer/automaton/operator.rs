@@ -1,7 +1,7 @@
 use crate::input::Input;
 use crate::lexer::automaton::{Automaton, buf_push};
 use crate::lexer::result::{Error as LexerError, Result as LexerResult};
-use crate::token::Token;
+use crate::token::{OperatorToken, Token};
 
 #[derive(Debug, Default)]
 pub struct OperatorAutomaton {}
@@ -31,8 +31,8 @@ impl Automaton for OperatorAutomaton {
             match state {
                 0 => {
                     // 状态 S
-                    // 检查输入是否为 '='，如果不是，直接抛出错误
-                    if !self.acceptable(c) {
+                    // 检查输入是否为 '=' 或 '*'，如果不是，直接抛出错误
+                    if !matches!(c, '=' | '*') {
                         return Err(LexerError::UnexpectedChar(c));
                     }
 
@@ -78,7 +78,9 @@ impl Automaton for OperatorAutomaton {
 
         // 根据最终状态返回对应的 Token
         match state {
-            1 | 2 | 3 => Ok(Token::Operator(buf[..index].iter().collect())),
+            1 => Ok(Token::Operator(OperatorToken::Assign)),
+            2 => Ok(Token::Operator(OperatorToken::Equal)),
+            3 => Ok(Token::Operator(OperatorToken::Mul)),
             _ => Err(LexerError::EndOfInput),
         }
     }
@@ -97,19 +99,19 @@ mod tests {
 
     // 逻辑：== vs = vs *
     // 测试案例：
-    // - 输入 "="，读入 '=' 发现后位不是 '='，返回 Token::Operator("=")
-    // - 输入 "=="，读入 '=' 发现后位是 '='，消费两位，返回 Token::Operator("==")
-    // - 输入 "==="，返回 Token::Operator("==")，且指针停在第三个 '=' 上（后续交由下一轮解析，由 **文法分析器** 报错）
-    // - 输入 "=1"，返回 Token::Operator("=")，且指针停在 '1'
-    // - 输入 "*"，读入 '*' 后直接停机，返回 Token::Operator("*")
-    // - 输入 "*1"，返回 Token::Operator("*")，且指针停在 '1'
-    // - 输入 "**"，返回 Token::Operator("*")，且指针停在第二个 '*' 上
+    // - 输入 "="，读入 '=' 发现后位不是 '='，返回 Token::Operator(Assign)
+    // - 输入 "=="，读入 '=' 发现后位是 '='，消费两位，返回 Token::Operator(Equal)
+    // - 输入 "==="，返回 Token::Operator(Equal)，且指针停在第三个 '=' 上
+    // - 输入 "=1"，返回 Token::Operator(Assign)，且指针停在 '1'
+    // - 输入 "*"，读入 '*' 后直接停机，返回 Token::Operator(Mul)
+    // - 输入 "*1"，返回 Token::Operator(Mul)，且指针停在 '1'
+    // - 输入 "**"，返回 Token::Operator(Mul)，且指针停在第二个 '*' 上
 
     #[test]
     fn accepts_single_equal() {
         let (result, input) = try_accept("=", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "="));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Assign))));
         assert_eq!(input.peek(), None);
     }
 
@@ -117,7 +119,7 @@ mod tests {
     fn accepts_double_equal() {
         let (result, input) = try_accept("==", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "=="));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Equal))));
         assert_eq!(input.peek(), None);
     }
 
@@ -125,7 +127,7 @@ mod tests {
     fn greedy_stops_before_third_equal() {
         let (result, input) = try_accept("===", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "=="));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Equal))));
         assert_eq!(input.peek(), Some('='));
     }
 
@@ -133,7 +135,7 @@ mod tests {
     fn stops_before_digit() {
         let (result, input) = try_accept("=1", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "="));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Assign))));
         assert_eq!(input.peek(), Some('1'));
     }
 
@@ -156,7 +158,7 @@ mod tests {
     fn accepts_asterisk() {
         let (result, input) = try_accept("*", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "*"));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Mul))));
         assert_eq!(input.peek(), None);
     }
 
@@ -164,7 +166,7 @@ mod tests {
     fn asterisk_stops_before_digit() {
         let (result, input) = try_accept("*1", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "*"));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Mul))));
         assert_eq!(input.peek(), Some('1'));
     }
 
@@ -172,7 +174,7 @@ mod tests {
     fn asterisk_not_greedy() {
         let (result, input) = try_accept("**", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(ref s)) if s == "*"));
+        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Mul))));
         assert_eq!(input.peek(), Some('*'));
     }
 }

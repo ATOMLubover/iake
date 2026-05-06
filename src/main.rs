@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 use iake::input::file_input::FileInput;
 use iake::lexer::Lexer;
@@ -45,7 +45,9 @@ fn process_file(input_path: &str, output_path: &str) {
                 let cur = lexer.cursor();
                 error_info = Some(format!(
                     "(line {}, col {}): {}",
-                    cur.line, cur.column, format_error(&e)
+                    cur.line,
+                    cur.column,
+                    format_error(&e)
                 ));
                 break;
             }
@@ -89,20 +91,31 @@ fn format_error(err: &LexerError) -> String {
 }
 
 fn token_len(token: &Token) -> usize {
+    use iake::token::{KeywordToken, OperatorToken};
+
     match token {
-        Token::Keyword(s) | Token::Identifier(s) | Token::Operator(s) | Token::Punctuation(s) => {
-            s.len()
-        }
+        Token::Keyword(k) => match k {
+            KeywordToken::I32 => 3,
+            KeywordToken::If => 2,
+            KeywordToken::Else => 4,
+        },
+        Token::Identifier(s) => s.len(),
         Token::Integer(n) => n.to_string().len(),
+        Token::Operator(op) => match op {
+            OperatorToken::Equal => 2,
+            OperatorToken::Assign => 1,
+            OperatorToken::Mul => 1,
+        },
+        Token::Punctuation(_) => 1,
     }
 }
 
 fn format_token(token: &Token) -> String {
     match token {
-        Token::Keyword(s) => format!("<Keyword, \"{}\">", s),
-        Token::Identifier(s) => format!("<Identifier, \"{}\">", s),
-        Token::Integer(n) => format!("<Integer, \"{}\">", n),
-        Token::Operator(s) => format!("<Operator, \"{}\">", s),
-        Token::Punctuation(s) => format!("<Punctuation, \"{}\">", s),
+        Token::Keyword(k) => format!("<Keyword, {}>", k),
+        Token::Identifier(s) => format!("<Identifier, {}>", s),
+        Token::Integer(n) => format!("<Integer, {}>", n),
+        Token::Operator(op) => format!("<Operator, {}>", op),
+        Token::Punctuation(p) => format!("<Punctuation, {}>", p),
     }
 }

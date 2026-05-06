@@ -115,7 +115,7 @@ mod tests {
     use super::*;
 
     use crate::input::test_input::TestInput;
-    use crate::token::Token;
+    use crate::token::{KeywordToken, OperatorToken, PunctuationToken, Token};
 
     // 逻辑：Lexer 集成测试，覆盖空白跳过、注释跳过、调度优先级、多 token 序列、关键词识别、异常处理
     // 测试案例：
@@ -155,7 +155,7 @@ mod tests {
         let mut lexer = lexer("   ;");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ";"
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
         ));
     }
 
@@ -164,7 +164,7 @@ mod tests {
         let mut lexer = lexer("  \n  \n  ;");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ";"
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
         ));
     }
 
@@ -240,7 +240,7 @@ mod tests {
         let mut lexer = lexer("*");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "*"
+            Ok(Token::Operator(OperatorToken::Mul))
         ));
     }
 
@@ -253,7 +253,7 @@ mod tests {
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "*"
+            Ok(Token::Operator(OperatorToken::Mul))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -266,7 +266,7 @@ mod tests {
         let mut lexer = lexer("==");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "=="
+            Ok(Token::Operator(OperatorToken::Equal))
         ));
     }
 
@@ -275,7 +275,7 @@ mod tests {
         let mut lexer = lexer("i32 a");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "i32"
+            Ok(Token::Keyword(KeywordToken::I32))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -288,7 +288,7 @@ mod tests {
         let mut lexer = lexer("i32 a = 1;");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "i32"
+            Ok(Token::Keyword(KeywordToken::I32))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -296,12 +296,12 @@ mod tests {
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "="
+            Ok(Token::Operator(OperatorToken::Assign))
         ));
         assert!(matches!(lexer.next_token(), Ok(Token::Integer(1))));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ";"
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
         ));
         assert!(matches!(lexer.next_token(), Err(LexerError::EndOfInput)));
     }
@@ -311,11 +311,11 @@ mod tests {
         let mut lexer = lexer("if (a == 1) { b = 1; } else { b = 2; }");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "if"
+            Ok(Token::Keyword(KeywordToken::If))
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == "("
+            Ok(Token::Punctuation(PunctuationToken::ParenLeft))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -323,16 +323,16 @@ mod tests {
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "=="
+            Ok(Token::Operator(OperatorToken::Equal))
         ));
         assert!(matches!(lexer.next_token(), Ok(Token::Integer(1))));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ")"
+            Ok(Token::Punctuation(PunctuationToken::ParenRight))
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == "{"
+            Ok(Token::Punctuation(PunctuationToken::BraceLeft))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -340,24 +340,24 @@ mod tests {
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "="
+            Ok(Token::Operator(OperatorToken::Assign))
         ));
         assert!(matches!(lexer.next_token(), Ok(Token::Integer(1))));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ";"
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == "}"
+            Ok(Token::Punctuation(PunctuationToken::BraceRight))
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "else"
+            Ok(Token::Keyword(KeywordToken::Else))
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == "{"
+            Ok(Token::Punctuation(PunctuationToken::BraceLeft))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -365,16 +365,16 @@ mod tests {
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "="
+            Ok(Token::Operator(OperatorToken::Assign))
         ));
         assert!(matches!(lexer.next_token(), Ok(Token::Integer(2))));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ";"
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == "}"
+            Ok(Token::Punctuation(PunctuationToken::BraceRight))
         ));
         assert!(matches!(lexer.next_token(), Err(LexerError::EndOfInput)));
     }
@@ -384,7 +384,7 @@ mod tests {
         let mut lexer = lexer("i32 a = 1; # inline comment\ni32 b = 2;");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "i32"
+            Ok(Token::Keyword(KeywordToken::I32))
         ));
         assert!(matches!(
             lexer.next_token(),
@@ -392,17 +392,17 @@ mod tests {
         ));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Operator(ref s)) if s == "="
+            Ok(Token::Operator(OperatorToken::Assign))
         ));
         assert!(matches!(lexer.next_token(), Ok(Token::Integer(1))));
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Punctuation(ref s)) if s == ";"
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
         ));
         // 注释被跳过，接下来是下一行的 i32
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "i32"
+            Ok(Token::Keyword(KeywordToken::I32))
         ));
     }
 
@@ -411,7 +411,7 @@ mod tests {
         let mut lexer = lexer("if");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "if"
+            Ok(Token::Keyword(KeywordToken::If))
         ));
     }
 
@@ -420,7 +420,7 @@ mod tests {
         let mut lexer = lexer("else");
         assert!(matches!(
             lexer.next_token(),
-            Ok(Token::Keyword(ref s)) if s == "else"
+            Ok(Token::Keyword(KeywordToken::Else))
         ));
     }
 }

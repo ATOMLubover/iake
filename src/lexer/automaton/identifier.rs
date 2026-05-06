@@ -1,26 +1,14 @@
-use std::collections::HashSet;
-
 use crate::input::Input;
 use crate::lexer::automaton::{Automaton, buf_push};
 use crate::lexer::result::{Error as LexerError, Result as LexerResult};
-use crate::token::Token;
+use crate::token::{KeywordToken, Token};
 
-#[derive(Debug)]
-pub struct IdentifierAutomaton {
-    keywords: HashSet<&'static str>,
-}
+#[derive(Debug, Default)]
+pub struct IdentifierAutomaton {}
 
 impl IdentifierAutomaton {
     pub fn new() -> Self {
-        let keywords = ["if", "else", "i32"].into_iter().collect();
-
-        Self { keywords }
-    }
-}
-
-impl Default for IdentifierAutomaton {
-    fn default() -> Self {
-        Self::new()
+        Self::default()
     }
 }
 
@@ -48,7 +36,7 @@ impl Automaton for IdentifierAutomaton {
                 0 => {
                     // 状态 S
                     // 检查输入是否为字母或下划线，如果不是，直接抛出错误
-                    if !self.acceptable(c) {
+                    if !(c.is_ascii_alphabetic() || c == '_') {
                         return Err(LexerError::UnexpectedChar(c));
                     }
 
@@ -74,19 +62,18 @@ impl Automaton for IdentifierAutomaton {
         }
 
         // 只要到达了这里，且 buf 不为空，说明我们成功接受了一个标识符或关键字
-        // 这里唯一的终态就是状态 A，所以我们不需要检查状态了
         match index {
             0 => {
                 // 没有接受到任何字符，说明输入结束了
                 Err(LexerError::EndOfInput)
             }
             _ => {
-                // 最后检查是否是关键字
                 let token: String = buf[..index].iter().collect();
-
-                match self.keywords.contains(token.as_str()) {
-                    true => Ok(Token::Keyword(token)),
-                    false => Ok(Token::Identifier(token)),
+                match token.as_str() {
+                    "i32" => Ok(Token::Keyword(KeywordToken::I32)),
+                    "if" => Ok(Token::Keyword(KeywordToken::If)),
+                    "else" => Ok(Token::Keyword(KeywordToken::Else)),
+                    _ => Ok(Token::Identifier(token)),
                 }
             }
         }
@@ -107,66 +94,67 @@ mod tests {
 
     // 逻辑：[a-zA-Z_][a-zA-Z0-9_]*，匹配后查表区分
     // 测试案例：
-    // - 输入 "if"，应该接受成功，返回 Token::Keyword("if")
-    // - 输入 "i32"，应该接受成功，返回 Token::Keyword("i32")
+    // - 输入 "if"，应该接受成功，返回 Token::Keyword(If)
+    // - 输入 "else"，应该接受成功，返回 Token::Keyword(Else)
+    // - 输入 "i32"，应该接受成功，返回 Token::Keyword(I32)
     // - 输入 "my_var1"，应该接受成功，返回 Token::Identifier("my_var1")
     // - 输入 "_tmp"，应该接受成功，返回 Token::Identifier("_tmp")
-    // - 输入 "if(flag)"，应该接受成功，返回 Token::Keyword("if")，且指针停在 '('
+    // - 输入 "if(flag)"，应该接受成功，返回 Token::Keyword(If)，且指针停在 '('
     // - 输入 "1var"，在此 DFA 匹配失败，返回 LexerError::UnexpectedChar('1')
 
     #[test]
     fn accepts_keyword_if() {
-        let (result, _) = try_accept("if", IdentifierAutomaton::new());
+        let (result, _) = try_accept("if", IdentifierAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Keyword(ref s)) if s == "if"));
+        assert!(matches!(result, Ok(Token::Keyword(KeywordToken::If))));
     }
 
     #[test]
     fn accepts_keyword_else() {
-        let (result, _) = try_accept("else", IdentifierAutomaton::new());
+        let (result, _) = try_accept("else", IdentifierAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Keyword(ref s)) if s == "else"));
+        assert!(matches!(result, Ok(Token::Keyword(KeywordToken::Else))));
     }
 
     #[test]
     fn accepts_keyword_i32() {
-        let (result, _) = try_accept("i32", IdentifierAutomaton::new());
+        let (result, _) = try_accept("i32", IdentifierAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Keyword(ref s)) if s == "i32"));
+        assert!(matches!(result, Ok(Token::Keyword(KeywordToken::I32))));
     }
 
     #[test]
     fn accepts_identifier() {
-        let (result, _) = try_accept("my_var1", IdentifierAutomaton::new());
+        let (result, _) = try_accept("my_var1", IdentifierAutomaton::default());
 
         assert!(matches!(result, Ok(Token::Identifier(ref s)) if s == "my_var1"));
     }
 
     #[test]
     fn accepts_underscore_prefix() {
-        let (result, _) = try_accept("_tmp", IdentifierAutomaton::new());
+        let (result, _) = try_accept("_tmp", IdentifierAutomaton::default());
 
         assert!(matches!(result, Ok(Token::Identifier(ref s)) if s == "_tmp"));
     }
 
     #[test]
     fn stops_before_paren() {
-        let (result, input) = try_accept("if(flag)", IdentifierAutomaton::new());
+        let (result, input) = try_accept("if(flag)", IdentifierAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Keyword(ref s)) if s == "if"));
+        assert!(matches!(result, Ok(Token::Keyword(KeywordToken::If))));
         assert_eq!(input.peek(), Some('('));
     }
 
     #[test]
     fn rejects_non_alpha_start() {
-        let (result, _) = try_accept("1var", IdentifierAutomaton::new());
+        let (result, _) = try_accept("1var", IdentifierAutomaton::default());
 
         assert!(matches!(result, Err(LexerError::UnexpectedChar('1'))));
     }
 
     #[test]
     fn rejects_empty_input() {
-        let (result, _) = try_accept("", IdentifierAutomaton::new());
+        let (result, _) = try_accept("", IdentifierAutomaton::default());
 
         assert!(matches!(result, Err(LexerError::EndOfInput)));
     }

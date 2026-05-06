@@ -1,6 +1,7 @@
 use crate::input::Input;
 use crate::lexer::automaton::Automaton;
 use crate::lexer::result::{Error as LexerError, Result as LexerResult};
+use crate::token::{PunctuationToken, Token};
 
 #[derive(Debug, Default)]
 pub struct PunctuationAutomaton {}
@@ -14,11 +15,16 @@ impl Automaton for PunctuationAutomaton {
 
         // 由于过于简单，此处不再使用严格的 DFA
         match input.peek() {
-            Some(c) if self.acceptable(c) => {
-                // 直接接受一个字符，返回对应的 Token
-                // 注意，需要推进输入指针
+            Some(c) if matches!(c, '(' | ')' | '{' | '}' | ';') => {
                 input.advance();
-                Ok(crate::token::Token::Punctuation(c.to_string()))
+                match c {
+                    '(' => Ok(Token::Punctuation(PunctuationToken::ParenLeft)),
+                    ')' => Ok(Token::Punctuation(PunctuationToken::ParenRight)),
+                    '{' => Ok(Token::Punctuation(PunctuationToken::BraceLeft)),
+                    '}' => Ok(Token::Punctuation(PunctuationToken::BraceRight)),
+                    ';' => Ok(Token::Punctuation(PunctuationToken::Semicolon)),
+                    _ => unreachable!(),
+                }
             }
             Some(c) => {
                 // 已经进入 DFA 但字符不可处理
@@ -42,56 +48,75 @@ mod tests {
 
     use crate::input::Input;
     use crate::lexer::automaton::tests::try_accept;
-    use crate::token::Token;
 
     // 逻辑：单字符匹配。
     // 测试案例：
-    // - 输入 ";"，返回 Token::Punctuation(";")
-    // - 输入 "{"，返回 Token::Punctuation("{")
-    // - 输入 "}"，返回 Token::Punctuation("}")
-    // - 输入 "(("，返回 Token::Punctuation("(")，且指针停在第二个 '(' 上
+    // - 输入 ";"，返回 Token::Punctuation(Semicolon)
+    // - 输入 "{"，返回 Token::Punctuation(BraceLeft)
+    // - 输入 "}"，返回 Token::Punctuation(BraceRight)
+    // - 输入 "("，返回 Token::Punctuation(ParenLeft)
+    // - 输入 ")"，返回 Token::Punctuation(ParenRight)
+    // - 输入 "(("，返回 Token::Punctuation(ParenLeft)，且指针停在第二个 '(' 上
     // - 输入 "a"，返回 Err(LexerError::UnexpectedChar('a'))，且指针停在 'a' 上
 
     #[test]
     fn accepts_semicolon() {
         let (result, _) = try_accept(";", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Punctuation(ref s)) if s == ";"));
+        assert!(matches!(
+            result,
+            Ok(Token::Punctuation(PunctuationToken::Semicolon))
+        ));
     }
 
     #[test]
     fn accepts_left_brace() {
         let (result, _) = try_accept("{", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Punctuation(ref s)) if s == "{"));
+        assert!(matches!(
+            result,
+            Ok(Token::Punctuation(PunctuationToken::BraceLeft))
+        ));
     }
 
     #[test]
     fn accepts_right_brace() {
         let (result, _) = try_accept("}", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Punctuation(ref s)) if s == "}"));
+        assert!(matches!(
+            result,
+            Ok(Token::Punctuation(PunctuationToken::BraceRight))
+        ));
     }
 
     #[test]
     fn accepts_left_paren() {
         let (result, _) = try_accept("(", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Punctuation(ref s)) if s == "("));
+        assert!(matches!(
+            result,
+            Ok(Token::Punctuation(PunctuationToken::ParenLeft))
+        ));
     }
 
     #[test]
     fn accepts_right_paren() {
         let (result, _) = try_accept(")", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Punctuation(ref s)) if s == ")"));
+        assert!(matches!(
+            result,
+            Ok(Token::Punctuation(PunctuationToken::ParenRight))
+        ));
     }
 
     #[test]
     fn stops_before_second_paren() {
         let (result, input) = try_accept("((", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Punctuation(ref s)) if s == "("));
+        assert!(matches!(
+            result,
+            Ok(Token::Punctuation(PunctuationToken::ParenLeft))
+        ));
         assert_eq!(input.peek(), Some('('));
     }
 
