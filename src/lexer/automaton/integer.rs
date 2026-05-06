@@ -54,7 +54,7 @@ impl Automaton for IntegerAutomaton {
                     // 状态 S
                     // 检查输入是否为 0-9，如果不是，直接抛出错误
                     if !self.acceptable(c) {
-                        return Err(LexerError::InvalidChar(c));
+                        return Err(LexerError::UnexpectedChar(c));
                     }
 
                     input.advance();
@@ -68,8 +68,10 @@ impl Automaton for IntegerAutomaton {
                     }
                 }
                 1 => {
-                    // 状态 A
-                    // 此时不应该再接受任何输出，直接停机
+                    // 状态 A，只接受 '0'，后面不应再有数字
+                    if c.is_ascii_digit() {
+                        return Err(LexerError::UnexpectedChar(c));
+                    }
                     break;
                 }
                 2 => {
@@ -119,7 +121,7 @@ mod tests {
     // - 输入 "123"，应该接受成功，返回 Token::Integer(123)
     // - 输入 "0"，应该接受成功，返回 Token::Integer(0)
     // - 输入 "0123"，应该接受失败，返回 LexerError::InvalidInteger("0123")
-    // - 输入 "abc"，应该接受失败，返回 LexerError::InvalidChar('a')
+    // - 输入 "abc"，应该接受失败，返回 LexerError::UnexpectedChar('a')
     // - 输入 ""，应该接受失败，返回 LexerError::EndOfInput
     // - 输入 "123abc"，应该接受成功，返回 Token::Integer(123)，并且输入指针停在 'a' 上
 
@@ -139,17 +141,16 @@ mod tests {
 
     #[test]
     fn rejects_integer_with_leading_zero() {
-        let (result, input) = try_accept("0123", IntegerAutomaton::default());
+        let (result, _input) = try_accept("0123", IntegerAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Integer(0))));
-        assert_eq!(input.peek(), Some('1'));
+        assert!(matches!(result, Err(LexerError::UnexpectedChar('1'))));
     }
 
     #[test]
     fn rejects_non_digit_at_start() {
         let (result, _) = try_accept("abc", IntegerAutomaton::default());
 
-        assert!(matches!(result, Err(LexerError::InvalidChar('a'))));
+        assert!(matches!(result, Err(LexerError::UnexpectedChar('a'))));
     }
 
     #[test]

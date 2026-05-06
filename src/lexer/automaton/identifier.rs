@@ -12,7 +12,7 @@ pub struct IdentifierAutomaton {
 
 impl IdentifierAutomaton {
     pub fn new() -> Self {
-        let keywords = ["if", "else", "i32"].iter().cloned().collect();
+        let keywords = ["if", "else", "i32"].into_iter().collect();
 
         Self { keywords }
     }
@@ -49,7 +49,7 @@ impl Automaton for IdentifierAutomaton {
                     // 状态 S
                     // 检查输入是否为字母或下划线，如果不是，直接抛出错误
                     if !self.acceptable(c) {
-                        return Err(LexerError::InvalidChar(c));
+                        return Err(LexerError::UnexpectedChar(c));
                     }
 
                     input.advance();
@@ -112,7 +112,7 @@ mod tests {
     // - 输入 "my_var1"，应该接受成功，返回 Token::Identifier("my_var1")
     // - 输入 "_tmp"，应该接受成功，返回 Token::Identifier("_tmp")
     // - 输入 "if(flag)"，应该接受成功，返回 Token::Keyword("if")，且指针停在 '('
-    // - 输入 "1var"，在此 DFA 匹配失败，返回 LexerError::InvalidChar('1')
+    // - 输入 "1var"，在此 DFA 匹配失败，返回 LexerError::UnexpectedChar('1')
 
     #[test]
     fn accepts_keyword_if() {
@@ -161,7 +161,7 @@ mod tests {
     fn rejects_non_alpha_start() {
         let (result, _) = try_accept("1var", IdentifierAutomaton::new());
 
-        assert!(matches!(result, Err(LexerError::InvalidChar('1'))));
+        assert!(matches!(result, Err(LexerError::UnexpectedChar('1'))));
     }
 
     #[test]

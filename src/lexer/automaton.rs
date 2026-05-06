@@ -31,12 +31,10 @@ fn buf_push(buf: &mut [char], maxlen: usize, idx: &mut usize, c: char) {
 #[cfg(test)]
 mod tests {
     use crate::input::test_input::TestInput;
+    use crate::lexer::automaton::Automaton;
     use crate::lexer::result::Result as LexerResult;
 
-    pub fn try_accept<A>(input: &str, mut automaton: A) -> (LexerResult, TestInput)
-    where
-        A: crate::lexer::automaton::Automaton,
-    {
+    pub fn try_accept(input: &str, mut automaton: impl Automaton) -> (LexerResult, TestInput) {
         let mut buf = ['\0'; 1024];
         let mut input = TestInput::new(input);
 

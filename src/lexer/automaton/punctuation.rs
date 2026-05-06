@@ -21,8 +21,8 @@ impl Automaton for PunctuationAutomaton {
                 Ok(crate::token::Token::Punctuation(c.to_string()))
             }
             Some(c) => {
-                // 如果输入字符不合法，直接抛出错误
-                Err(LexerError::InvalidChar(c))
+                // 已经进入 DFA 但字符不可处理
+                Err(LexerError::UnexpectedChar(c))
             }
             None => {
                 // 如果输入已经结束，抛出 EOF
@@ -50,7 +50,7 @@ mod tests {
     // - 输入 "{"，返回 Token::Punctuation("{")
     // - 输入 "}"，返回 Token::Punctuation("}")
     // - 输入 "(("，返回 Token::Punctuation("(")，且指针停在第二个 '(' 上
-    // - 输入 "a"，返回 Err(LexerError::InvalidChar('a'))，且指针停在 'a' 上
+    // - 输入 "a"，返回 Err(LexerError::UnexpectedChar('a'))，且指针停在 'a' 上
 
     #[test]
     fn accepts_semicolon() {
@@ -99,7 +99,7 @@ mod tests {
     fn rejects_non_punctuation() {
         let (result, input) = try_accept("a", PunctuationAutomaton::default());
 
-        assert!(matches!(result, Err(LexerError::InvalidChar('a'))));
+        assert!(matches!(result, Err(LexerError::UnexpectedChar('a'))));
         assert_eq!(input.peek(), Some('a'));
     }
 

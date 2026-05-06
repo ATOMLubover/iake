@@ -15,21 +15,24 @@ where
 {
     input: I,
 
+    buf: [char; BUF_SIZE],
+
     integer_automaton: IntegerAutomaton,
     identifier_automaton: IdentifierAutomaton,
     operator_automaton: OperatorAutomaton,
     punctuation_automaton: PunctuationAutomaton,
 }
 
+const BUF_SIZE: usize = 512;
+
 impl<T> Lexer<T>
 where
     T: Input,
 {
-    const BUF_SIZE: usize = 1024;
-
     pub fn new(input: T) -> Self {
         Self {
             input,
+            buf: ['\0'; BUF_SIZE],
             integer_automaton: IntegerAutomaton::default(),
             identifier_automaton: IdentifierAutomaton::new(),
             operator_automaton: OperatorAutomaton::default(),
@@ -38,13 +41,11 @@ where
     }
 
     pub fn next_token(&mut self) -> LexerResult {
-        let mut buf = ['\0'; Self::BUF_SIZE];
-
         // 预处理，先去掉空白字符和注释
         self.sanitize();
 
         match self.input.peek() {
-            Some(c) => self.dispatch(&mut buf, c),
+            Some(c) => self.dispatch(c),
             None => Err(LexerError::EndOfInput),
         }
     }
@@ -53,22 +54,22 @@ where
         self.input.cursor()
     }
 
-    fn dispatch(&mut self, buf: &mut [char], c: char) -> LexerResult {
+    fn dispatch(&mut self, c: char) -> LexerResult {
         // 此处需要严格按照优先级顺序判断
         if self.integer_automaton.acceptable(c) {
             self.integer_automaton
-                .try_accept(buf, Self::BUF_SIZE, &mut self.input)
+                .try_accept(&mut self.buf, BUF_SIZE, &mut self.input)
         } else if self.identifier_automaton.acceptable(c) {
             self.identifier_automaton
-                .try_accept(buf, Self::BUF_SIZE, &mut self.input)
+                .try_accept(&mut self.buf, BUF_SIZE, &mut self.input)
         } else if self.operator_automaton.acceptable(c) {
             self.operator_automaton
-                .try_accept(buf, Self::BUF_SIZE, &mut self.input)
+                .try_accept(&mut self.buf, BUF_SIZE, &mut self.input)
         } else if self.punctuation_automaton.acceptable(c) {
             self.punctuation_automaton
-                .try_accept(buf, Self::BUF_SIZE, &mut self.input)
+                .try_accept(&mut self.buf, BUF_SIZE, &mut self.input)
         } else {
-            Err(LexerError::UnexpectedChar(c))
+            Err(LexerError::InvalidChar(c))
         }
     }
 
@@ -121,7 +122,7 @@ mod tests {
     // - 输入 "   "，纯空白，返回 LexerError::EndOfInput
     // - 输入 "   ;"，前导空白后接分隔符，返回 Token::Punctuation(";")
     // - 输入 "  \n  \n  ;"，多行空白混换行，返回 Token::Punctuation(";")
-    // - 输入 " @ "，异常字符，返回 LexerError::UnexpectedChar('@')
+    // - 输入 " @ "，异常字符，返回 LexerError::InvalidChar('@')
     // - 输入 "a=1"，无空格标识符接算式，返回 Token::Identifier("a")，指针停在 '='
     // - 输入 "# comment\na"，单行注释后接标识符，返回 Token::Identifier("a")
     // - 输入 "# comment"，只有注释无 token，返回 LexerError::EndOfInput
@@ -130,6 +131,8 @@ mod tests {
     // - 输入 "  \n  # comment\n  "，空白加注释加空白，返回 LexerError::EndOfInput
     // - 输入 "123abc"，数字优先走 IntegerAutomaton，返回 Token::Integer(123)，再返回 Token::Identifier("abc")
     // - 输入 "=="，优先走 OperatorAutomaton，返回 Token::Operator("==")
+    // - 输入 "*"，返回 Token::Operator("*")
+    // - 输入 "a * b"，乘号两侧有空格的表达式
     // - 输入 "i32 a"，关键词接标识符，返回 Token::Keyword("i32")、Token::Identifier("a")
     // - 输入 "i32 a = 1;"，完整声明语句
     // - 输入 "if (a == 1) { b = 1; } else { b = 2; }"，完整 if-else 块
@@ -166,11 +169,11 @@ mod tests {
     }
 
     #[test]
-    fn unexpected_char_after_whitespace() {
+    fn invalid_char_after_whitespace() {
         let mut lexer = lexer(" @ ");
         assert!(matches!(
             lexer.next_token(),
-            Err(LexerError::UnexpectedChar('@'))
+            Err(LexerError::InvalidChar('@'))
         ));
     }
 
@@ -229,6 +232,32 @@ mod tests {
         assert!(matches!(
             lexer.next_token(),
             Ok(Token::Identifier(ref s)) if s == "abc"
+        ));
+    }
+
+    #[test]
+    fn asterisk_is_tokenized_as_operator() {
+        let mut lexer = lexer("*");
+        assert!(matches!(
+            lexer.next_token(),
+            Ok(Token::Operator(ref s)) if s == "*"
+        ));
+    }
+
+    #[test]
+    fn asterisk_operator_in_expression() {
+        let mut lexer = lexer("a * b");
+        assert!(matches!(
+            lexer.next_token(),
+            Ok(Token::Identifier(ref s)) if s == "a"
+        ));
+        assert!(matches!(
+            lexer.next_token(),
+            Ok(Token::Operator(ref s)) if s == "*"
+        ));
+        assert!(matches!(
+            lexer.next_token(),
+            Ok(Token::Identifier(ref s)) if s == "b"
         ));
     }
 

@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::{fs, iter};
+use std::fs;
 
 use iake::input::file_input::FileInput;
 use iake::lexer::Lexer;
@@ -13,49 +13,79 @@ struct TokenInfo {
 }
 
 fn main() {
-    let input_path = "tests/example/input.txt";
+    for i in 1..=3 {
+        let input_path = format!("tests/example/input-{}.txt", i);
+        let output_path = format!("tests/example/output-{}.txt", i);
+        process_file(&input_path, &output_path);
+    }
+}
+
+fn process_file(input_path: &str, output_path: &str) {
     let input = fs::read_to_string(input_path).expect("Failed to read input file");
     let input_lines: Vec<&str> = input.lines().collect();
 
     let mut lexer = Lexer::new(FileInput::new(PathBuf::from(input_path)));
 
-    let tokens: Vec<TokenInfo> = iter::from_fn(|| match lexer.next_token() {
-        Ok(token) => {
-            let cur = lexer.cursor();
-            let col = cur.column.saturating_sub(token_len(&token));
-            Some(TokenInfo {
-                line: cur.line,
-                col,
-                text: format_token(&token),
-            })
-        }
-        Err(LexerError::EndOfInput) => None,
-        Err(e) => panic!("Lexer error: {:?}", e),
-    })
-    .collect();
+    let mut tokens: Vec<TokenInfo> = Vec::new();
+    let mut error_info: Option<String> = None;
 
-    let output: String = input_lines
-        .iter()
-        .enumerate()
-        .filter_map(|(i, _)| {
-            let line_tokens: Vec<&TokenInfo> = tokens.iter().filter(|t| t.line == i).collect();
-            if line_tokens.is_empty() {
-                return None;
+    loop {
+        match lexer.next_token() {
+            Ok(token) => {
+                let cur = lexer.cursor();
+                let col = cur.column.saturating_sub(token_len(&token));
+                tokens.push(TokenInfo {
+                    line: cur.line,
+                    col,
+                    text: format_token(&token),
+                });
             }
-            let indent = line_tokens[0].col;
-            Some(format!(
-                "{}{}",
-                " ".repeat(indent),
-                line_tokens
-                    .iter()
-                    .map(|t| t.text.as_str())
-                    .collect::<String>()
-            ))
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
+            Err(LexerError::EndOfInput) => break,
+            Err(e) => {
+                let cur = lexer.cursor();
+                error_info = Some(format!(
+                    "(line {}, col {}): {}",
+                    cur.line, cur.column, format_error(&e)
+                ));
+                break;
+            }
+        }
+    }
 
-    fs::write("tests/example/output.txt", output).expect("Failed to write output file");
+    let output = match error_info {
+        Some(err) => err,
+        None => {
+            let mut lines: Vec<String> = Vec::new();
+            for (i, _) in input_lines.iter().enumerate() {
+                let line_tokens: Vec<&TokenInfo> = tokens.iter().filter(|t| t.line == i).collect();
+                if line_tokens.is_empty() {
+                    continue;
+                }
+                let indent = line_tokens[0].col;
+                lines.push(format!(
+                    "{}{}",
+                    " ".repeat(indent),
+                    line_tokens
+                        .iter()
+                        .map(|t| t.text.as_str())
+                        .collect::<String>()
+                ));
+            }
+            lines.join("\n")
+        }
+    };
+
+    fs::write(output_path, output).expect("Failed to write output file");
+}
+
+fn format_error(err: &LexerError) -> String {
+    match err {
+        LexerError::EndOfInput => "EndOfInput".to_string(),
+        LexerError::UnexpectedChar(c) => format!("UnexpectedChar('{}')", c),
+        LexerError::InvalidChar(c) => format!("InvalidChar('{}')", c),
+        LexerError::InvalidInteger(s) => format!("InvalidInteger(\"{}\")", s),
+        LexerError::TokenTooLong(s) => format!("TokenTooLong(\"{}\")", s),
+    }
 }
 
 fn token_len(token: &Token) -> usize {
