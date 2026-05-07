@@ -119,15 +119,13 @@ A：终态，直接停机
 
 ### 子 DFA 单元测试
 
-每类 automaton 独立测试，覆盖三条轴：
-
 | 维度 | 测试内容 | 例 |
 |------|---------|------|
 | 正常路径 | 合法输入 → 正确 Token | `"123" → Integer(123)`, `"if" → Keyword("if")` |
 | 边界情况 | 空输入、零、单字符、特殊字符 | `"" → EndOfInput`, `"0" → Integer(0)`, `"*" → Operator("*")` |
 | 错误路径 | 非法起始/后续字符 | `"1var" → InvalidChar('1')`, `"@" → UnexpectedChar('@')` |
 
-关键设计点：
+大致内容如下：
 
 - Integer：单独测试 `0` 接受后指针停在前导数字前（`"0123" → Integer(0), peek=Some('1')`），验证前导零拒绝策略
 - Operator：`=` 的贪心匹配（`"===" → Operator("=="), peek=Some('=')`），`*` 的非贪心单字符行为（`"**" → Operator("*"), peek=Some('*')`）
