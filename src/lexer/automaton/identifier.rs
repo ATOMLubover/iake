@@ -73,6 +73,7 @@ impl Automaton for IdentifierAutomaton {
                     "i32" => Ok(Token::Keyword(KeywordToken::I32)),
                     "if" => Ok(Token::Keyword(KeywordToken::If)),
                     "else" => Ok(Token::Keyword(KeywordToken::Else)),
+                    "while" => Ok(Token::Keyword(KeywordToken::While)),
                     _ => Ok(Token::Identifier(token)),
                 }
             }

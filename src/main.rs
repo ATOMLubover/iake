@@ -98,6 +98,7 @@ fn token_len(token: &Token) -> usize {
             KeywordToken::I32 => 3,
             KeywordToken::If => 2,
             KeywordToken::Else => 4,
+            KeywordToken::While => 5,
         },
         Token::Identifier(s) => s.len(),
         Token::Integer(n) => n.to_string().len(),

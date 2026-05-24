@@ -32,7 +32,7 @@ impl Automaton for OperatorAutomaton {
                 0 => {
                     // 状态 S
                     // 检查输入是否为 '=' 或 '*'，如果不是，直接抛出错误
-                    if !matches!(c, '=' | '*') {
+                    if !matches!(c, '=' | '*' | '<' | '+') {
                         return Err(LexerError::UnexpectedChar(c));
                     }
 
@@ -44,7 +44,7 @@ impl Automaton for OperatorAutomaton {
                             // 转移到状态 A
                             state = 1;
                         }
-                        '*' => {
+                        '*' | '<' | '+' => {
                             // 转移到状态 C
                             state = 3;
                         }
@@ -86,7 +86,7 @@ impl Automaton for OperatorAutomaton {
     }
 
     fn acceptable(&self, c: char) -> bool {
-        matches!(c, '=' | '*')
+        matches!(c, '=' | '*' | '<' | '+')
     }
 }
 

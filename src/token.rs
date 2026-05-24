@@ -11,6 +11,7 @@ pub enum KeywordToken {
     I32,
     If,
     Else,
+    While,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -35,6 +36,7 @@ impl std::fmt::Display for KeywordToken {
             KeywordToken::I32 => write!(f, "i32"),
             KeywordToken::If => write!(f, "if"),
             KeywordToken::Else => write!(f, "else"),
+            KeywordToken::While => write!(f, "while"),
         }
     }
 }
@@ -85,20 +87,21 @@ impl Token {
                 KeywordToken::I32 => 1,
                 KeywordToken::If => 2,
                 KeywordToken::Else => 3,
+                KeywordToken::While => 4,
             },
-            Token::Identifier(_) => 4,
-            Token::Integer(_) => 5,
+            Token::Identifier(_) => 5,
+            Token::Integer(_) => 6,
             Token::Operator(op) => match op {
-                OperatorToken::Equal => 6,
-                OperatorToken::Assign => 7,
-                OperatorToken::Mul => 8,
+                OperatorToken::Equal => 7,
+                OperatorToken::Assign => 8,
+                OperatorToken::Mul => 9,
             },
             Token::Punctuation(p) => match p {
-                PunctuationToken::ParenLeft => 9,
-                PunctuationToken::ParenRight => 10,
-                PunctuationToken::BraceLeft => 11,
-                PunctuationToken::BraceRight => 12,
-                PunctuationToken::Semicolon => 13,
+                PunctuationToken::ParenLeft => 10,
+                PunctuationToken::ParenRight => 11,
+                PunctuationToken::BraceLeft => 12,
+                PunctuationToken::BraceRight => 13,
+                PunctuationToken::Semicolon => 14,
             },
         }
     }
