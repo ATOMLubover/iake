@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use iake::input::file_input::FileInput;
 use iake::lexer::Lexer;
 use iake::lexer::result::Error as LexerError;
-use iake::token::Token;
+use iake::token::{OperatorToken, Token};
 
 struct TokenInfo {
     line: usize,
@@ -31,7 +31,7 @@ fn process_file(input_path: &str, output_path: &str) {
 
     loop {
         match lexer.next_token() {
-            Ok(token) => {
+            Ok(Some(token)) => {
                 let cur = lexer.cursor();
                 let col = cur.column.saturating_sub(token_len(&token));
                 tokens.push(TokenInfo {
@@ -40,7 +40,7 @@ fn process_file(input_path: &str, output_path: &str) {
                     text: format_token(&token),
                 });
             }
-            Err(LexerError::EndOfInput) => break,
+            Ok(None) => break,
             Err(e) => {
                 let cur = lexer.cursor();
                 error_info = Some(format!(
@@ -82,7 +82,6 @@ fn process_file(input_path: &str, output_path: &str) {
 
 fn format_error(err: &LexerError) -> String {
     match err {
-        LexerError::EndOfInput => "EndOfInput".to_string(),
         LexerError::UnexpectedChar(c) => format!("UnexpectedChar('{}')", c),
         LexerError::InvalidChar(c) => format!("InvalidChar('{}')", c),
         LexerError::InvalidInteger(s) => format!("InvalidInteger(\"{}\")", s),
@@ -91,7 +90,7 @@ fn format_error(err: &LexerError) -> String {
 }
 
 fn token_len(token: &Token) -> usize {
-    use iake::token::{KeywordToken, OperatorToken};
+    use iake::token::KeywordToken;
 
     match token {
         Token::Keyword(k) => match k {
@@ -106,6 +105,8 @@ fn token_len(token: &Token) -> usize {
             OperatorToken::Equal => 2,
             OperatorToken::Assign => 1,
             OperatorToken::Mul => 1,
+            OperatorToken::Less => 1,
+            OperatorToken::Add => 1,
         },
         Token::Punctuation(_) => 1,
     }

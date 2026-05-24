@@ -4,17 +4,20 @@ use crate::input::{Cursor, Input};
 
 // FileInput 为简单起见，直接转成 String 处理
 pub struct FileInput {
-    buf: String,
+    chars: Vec<char>,
     index: usize,
     cursor: Cursor,
 }
 
 impl FileInput {
     pub fn new(path: PathBuf) -> Self {
-        let buf = fs::read_to_string(path).expect("Failed to read file");
+        let chars = fs::read_to_string(path)
+            .expect("Failed to read file")
+            .chars()
+            .collect();
 
         Self {
-            buf,
+            chars,
             index: 0,
             cursor: Cursor::default(),
         }
@@ -23,7 +26,7 @@ impl FileInput {
 
 impl Input for FileInput {
     fn peek(&self) -> Option<char> {
-        self.buf.chars().nth(self.index)
+        self.chars.get(self.index).copied()
     }
 
     fn advance(&mut self) {
@@ -43,7 +46,7 @@ impl Input for FileInput {
     }
 
     fn is_eof(&self) -> bool {
-        self.index >= self.buf.len()
+        self.index >= self.chars.len()
     }
 
     fn cursor(&self) -> Cursor {

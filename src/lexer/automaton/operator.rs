@@ -13,25 +13,23 @@ impl Automaton for OperatorAutomaton {
         maxlen: usize,
         input: &mut impl Input,
     ) -> LexerResult {
-        // 运算符的 regex 为 ==|=|*
+        // 运算符的 regex 为 ==|=|*|<|+
         // 对应 DFA：
-        // S：初始状态，接受输入 '='，转移到 A；接受输入 '*'，转移到 C；接受其他输入，停机
-        // A：接受输入 '='，转移到 B；接受其他输入，停机，这也是一个终态
+        // S：初始状态，接受 '=' 转到 A；接受 '*'/'<'/'+' 转到 C；接受其他输入，停机
+        // A：接受 '=' 转到 B；接受其他输入，停机，这也是一个终态
         // B：终态，直接停机
         // C：终态，直接停机
         let mut state = 0;
         let mut index = 0;
+        let mut single_char_operator = None;
 
         while let Some(c) = input.peek() {
-            // 长度检查，如果已经达到 maxlen，直接停机
             if index >= maxlen {
                 return Err(LexerError::TokenTooLong(buf[..index].iter().collect()));
             }
 
             match state {
                 0 => {
-                    // 状态 S
-                    // 检查输入是否为 '=' 或 '*'，如果不是，直接抛出错误
                     if !matches!(c, '=' | '*' | '<' | '+') {
                         return Err(LexerError::UnexpectedChar(c));
                     }
@@ -40,48 +38,44 @@ impl Automaton for OperatorAutomaton {
                     buf_push(buf, maxlen, &mut index, c);
 
                     match c {
-                        '=' => {
-                            // 转移到状态 A
-                            state = 1;
-                        }
-                        '*' | '<' | '+' => {
-                            // 转移到状态 C
+                        '=' => state = 1,
+                        '*' => {
                             state = 3;
+                            single_char_operator = Some(OperatorToken::Mul);
+                        }
+                        '<' => {
+                            state = 3;
+                            single_char_operator = Some(OperatorToken::Less);
+                        }
+                        '+' => {
+                            state = 3;
+                            single_char_operator = Some(OperatorToken::Add);
                         }
                         _ => unreachable!(),
                     }
                 }
                 1 => {
-                    // 状态 A
-                    // 检查输入是否为 '='，如果是，接受并转移到状态 B；如果不是，停机
                     if c != '=' {
                         break;
                     }
 
                     input.advance();
                     buf_push(buf, maxlen, &mut index, c);
-
-                    // 转移到状态 B
                     state = 2;
                 }
-                2 => {
-                    // 状态 B 是终态，直接停机
-                    break;
-                }
-                3 => {
-                    // 状态 C 是终态，直接停机
-                    break;
-                }
+                2 | 3 => break,
                 _ => unreachable!(),
             }
         }
 
-        // 根据最终状态返回对应的 Token
         match state {
-            1 => Ok(Token::Operator(OperatorToken::Assign)),
-            2 => Ok(Token::Operator(OperatorToken::Equal)),
-            3 => Ok(Token::Operator(OperatorToken::Mul)),
-            _ => Err(LexerError::EndOfInput),
+            0 => Ok(None),
+            1 => Ok(Some(Token::Operator(OperatorToken::Assign))),
+            2 => Ok(Some(Token::Operator(OperatorToken::Equal))),
+            3 => Ok(Some(Token::Operator(
+                single_char_operator.expect("single-char operator token"),
+            ))),
+            _ => unreachable!(),
         }
     }
 
@@ -97,21 +91,11 @@ mod tests {
     use crate::input::Input;
     use crate::lexer::automaton::tests::try_accept;
 
-    // 逻辑：== vs = vs *
-    // 测试案例：
-    // - 输入 "="，读入 '=' 发现后位不是 '='，返回 Token::Operator(Assign)
-    // - 输入 "=="，读入 '=' 发现后位是 '='，消费两位，返回 Token::Operator(Equal)
-    // - 输入 "==="，返回 Token::Operator(Equal)，且指针停在第三个 '=' 上
-    // - 输入 "=1"，返回 Token::Operator(Assign)，且指针停在 '1'
-    // - 输入 "*"，读入 '*' 后直接停机，返回 Token::Operator(Mul)
-    // - 输入 "*1"，返回 Token::Operator(Mul)，且指针停在 '1'
-    // - 输入 "**"，返回 Token::Operator(Mul)，且指针停在第二个 '*' 上
-
     #[test]
     fn accepts_single_equal() {
         let (result, input) = try_accept("=", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Assign))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Assign))));
         assert_eq!(input.peek(), None);
     }
 
@@ -119,7 +103,7 @@ mod tests {
     fn accepts_double_equal() {
         let (result, input) = try_accept("==", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Equal))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Equal))));
         assert_eq!(input.peek(), None);
     }
 
@@ -127,7 +111,7 @@ mod tests {
     fn greedy_stops_before_third_equal() {
         let (result, input) = try_accept("===", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Equal))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Equal))));
         assert_eq!(input.peek(), Some('='));
     }
 
@@ -135,7 +119,7 @@ mod tests {
     fn stops_before_digit() {
         let (result, input) = try_accept("=1", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Assign))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Assign))));
         assert_eq!(input.peek(), Some('1'));
     }
 
@@ -147,18 +131,17 @@ mod tests {
     }
 
     #[test]
-    fn rejects_empty_input() {
+    fn accepts_empty_input_as_eof() {
         let (result, _) = try_accept("", OperatorAutomaton::default());
 
-        assert!(matches!(result, Err(LexerError::EndOfInput)));
+        assert_eq!(result, Ok(None));
     }
 
-    // * 是单字符运算符，读到即止
     #[test]
     fn accepts_asterisk() {
         let (result, input) = try_accept("*", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Mul))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Mul))));
         assert_eq!(input.peek(), None);
     }
 
@@ -166,7 +149,7 @@ mod tests {
     fn asterisk_stops_before_digit() {
         let (result, input) = try_accept("*1", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Mul))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Mul))));
         assert_eq!(input.peek(), Some('1'));
     }
 
@@ -174,7 +157,23 @@ mod tests {
     fn asterisk_not_greedy() {
         let (result, input) = try_accept("**", OperatorAutomaton::default());
 
-        assert!(matches!(result, Ok(Token::Operator(OperatorToken::Mul))));
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Mul))));
         assert_eq!(input.peek(), Some('*'));
+    }
+
+    #[test]
+    fn accepts_less_than() {
+        let (result, input) = try_accept("<", OperatorAutomaton::default());
+
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Less))));
+        assert_eq!(input.peek(), None);
+    }
+
+    #[test]
+    fn accepts_plus() {
+        let (result, input) = try_accept("+", OperatorAutomaton::default());
+
+        assert_eq!(result, Ok(Some(Token::Operator(OperatorToken::Add))));
+        assert_eq!(input.peek(), None);
     }
 }

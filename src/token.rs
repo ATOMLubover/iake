@@ -1,3 +1,4 @@
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     Keyword(KeywordToken),
     Identifier(String),
@@ -19,6 +20,8 @@ pub enum OperatorToken {
     Equal,  // ==
     Assign, // =
     Mul,    // *
+    Less,   // <
+    Add,    // +
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -47,6 +50,8 @@ impl std::fmt::Display for OperatorToken {
             OperatorToken::Equal => write!(f, "=="),
             OperatorToken::Assign => write!(f, "="),
             OperatorToken::Mul => write!(f, "*"),
+            OperatorToken::Less => write!(f, "<"),
+            OperatorToken::Add => write!(f, "+"),
         }
     }
 }
@@ -71,16 +76,19 @@ impl Token {
     /// | 1 | KeywordI32 | `i32` |
     /// | 2 | KeywordIf | `if` |
     /// | 3 | KeywordElse | `else` |
-    /// | 4 | Identifier | 标识符 |
-    /// | 5 | Integer | 整数 |
-    /// | 6 | OperatorEq | `==` |
-    /// | 7 | OperatorAssign | `=` |
-    /// | 8 | OperatorMul | `*` |
-    /// | 9 | ParenLeft | `(` |
-    /// | 10 | ParenRight | `)` |
-    /// | 11 | BraceLeft | `{` |
-    /// | 12 | BraceRight | `}` |
-    /// | 13 | Semicolon | `;` |
+    /// | 4 | KeywordWhile | `while` |
+    /// | 5 | Identifier | 标识符 |
+    /// | 6 | Integer | 整数 |
+    /// | 7 | OperatorEq | `==` |
+    /// | 8 | OperatorAssign | `=` |
+    /// | 9 | OperatorMul | `*` |
+    /// | 10 | OperatorLess | `<` |
+    /// | 11 | OperatorAdd | `+` |
+    /// | 12 | ParenLeft | `(` |
+    /// | 13 | ParenRight | `)` |
+    /// | 14 | BraceLeft | `{` |
+    /// | 15 | BraceRight | `}` |
+    /// | 16 | Semicolon | `;` |
     pub fn code(&self) -> u8 {
         match self {
             Token::Keyword(k) => match k {
@@ -95,13 +103,15 @@ impl Token {
                 OperatorToken::Equal => 7,
                 OperatorToken::Assign => 8,
                 OperatorToken::Mul => 9,
+                OperatorToken::Less => 10,
+                OperatorToken::Add => 11,
             },
             Token::Punctuation(p) => match p {
-                PunctuationToken::ParenLeft => 10,
-                PunctuationToken::ParenRight => 11,
-                PunctuationToken::BraceLeft => 12,
-                PunctuationToken::BraceRight => 13,
-                PunctuationToken::Semicolon => 14,
+                PunctuationToken::ParenLeft => 12,
+                PunctuationToken::ParenRight => 13,
+                PunctuationToken::BraceLeft => 14,
+                PunctuationToken::BraceRight => 15,
+                PunctuationToken::Semicolon => 16,
             },
         }
     }
@@ -128,31 +138,34 @@ mod tests {
         assert_eq!(Token::Keyword(KeywordToken::I32).code(), 1);
         assert_eq!(Token::Keyword(KeywordToken::If).code(), 2);
         assert_eq!(Token::Keyword(KeywordToken::Else).code(), 3);
+        assert_eq!(Token::Keyword(KeywordToken::While).code(), 4);
     }
 
     #[test]
     fn identifier_encoding() {
-        assert_eq!(Token::Identifier("x".into()).code(), 4);
+        assert_eq!(Token::Identifier("x".into()).code(), 5);
     }
 
     #[test]
     fn integer_encoding() {
-        assert_eq!(Token::Integer(42).code(), 5);
+        assert_eq!(Token::Integer(42).code(), 6);
     }
 
     #[test]
     fn operator_encoding() {
-        assert_eq!(Token::Operator(OperatorToken::Equal).code(), 6);
-        assert_eq!(Token::Operator(OperatorToken::Assign).code(), 7);
-        assert_eq!(Token::Operator(OperatorToken::Mul).code(), 8);
+        assert_eq!(Token::Operator(OperatorToken::Equal).code(), 7);
+        assert_eq!(Token::Operator(OperatorToken::Assign).code(), 8);
+        assert_eq!(Token::Operator(OperatorToken::Mul).code(), 9);
+        assert_eq!(Token::Operator(OperatorToken::Less).code(), 10);
+        assert_eq!(Token::Operator(OperatorToken::Add).code(), 11);
     }
 
     #[test]
     fn punctuation_encoding() {
-        assert_eq!(Token::Punctuation(PunctuationToken::ParenLeft).code(), 9);
-        assert_eq!(Token::Punctuation(PunctuationToken::ParenRight).code(), 10);
-        assert_eq!(Token::Punctuation(PunctuationToken::BraceLeft).code(), 11);
-        assert_eq!(Token::Punctuation(PunctuationToken::BraceRight).code(), 12);
-        assert_eq!(Token::Punctuation(PunctuationToken::Semicolon).code(), 13);
+        assert_eq!(Token::Punctuation(PunctuationToken::ParenLeft).code(), 12);
+        assert_eq!(Token::Punctuation(PunctuationToken::ParenRight).code(), 13);
+        assert_eq!(Token::Punctuation(PunctuationToken::BraceLeft).code(), 14);
+        assert_eq!(Token::Punctuation(PunctuationToken::BraceRight).code(), 15);
+        assert_eq!(Token::Punctuation(PunctuationToken::Semicolon).code(), 16);
     }
 }

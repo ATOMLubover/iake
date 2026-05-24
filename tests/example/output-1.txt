@@ -2,7 +2,7 @@
 <Keyword, i32><Identifier, b><Operator, =><Integer, 0><Punctuation, ;>
 <Keyword, if><Punctuation, (><Identifier, a><Operator, ==><Integer, 1><Punctuation, )><Punctuation, {>
     <Identifier, b><Operator, =><Identifier, a><Operator, *><Identifier, a><Punctuation, ;>
-    <Keyword, while><Punctuation, (><Identifier, b><Operator, *><Integer, 10><Punctuation, )><Punctuation, {>
+    <Keyword, while><Punctuation, (><Identifier, b><Operator, <><Integer, 10><Punctuation, )><Punctuation, {>
         <Identifier, b><Operator, =><Identifier, b><Operator, *><Integer, 2><Punctuation, ;>
     <Punctuation, }>
 <Punctuation, }><Keyword, else><Punctuation, {>
