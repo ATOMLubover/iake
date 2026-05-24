@@ -1,0 +1,1 @@
+(line 2, col 0): expected `}`, found EOF

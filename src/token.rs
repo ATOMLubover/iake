@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     Keyword(KeywordToken),
     Identifier(String),
@@ -7,7 +7,7 @@ pub enum Token {
     Punctuation(PunctuationToken),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeywordToken {
     I32,
     If,
@@ -15,7 +15,7 @@ pub enum KeywordToken {
     While,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OperatorToken {
     Equal,  // ==
     Assign, // =
@@ -24,7 +24,7 @@ pub enum OperatorToken {
     Add,    // +
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PunctuationToken {
     ParenLeft,  // (
     ParenRight, // )

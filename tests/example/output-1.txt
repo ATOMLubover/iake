@@ -1,13 +1,38 @@
-<Keyword, i32><Identifier, a><Operator, =><Integer, 1><Punctuation, ;>
-<Keyword, i32><Identifier, b><Operator, =><Integer, 0><Punctuation, ;>
-<Keyword, if><Punctuation, (><Identifier, a><Operator, ==><Integer, 1><Punctuation, )><Punctuation, {>
-    <Identifier, b><Operator, =><Identifier, a><Operator, *><Identifier, a><Punctuation, ;>
-    <Keyword, while><Punctuation, (><Identifier, b><Operator, <><Integer, 10><Punctuation, )><Punctuation, {>
-        <Identifier, b><Operator, =><Identifier, b><Operator, *><Integer, 2><Punctuation, ;>
-    <Punctuation, }>
-<Punctuation, }><Keyword, else><Punctuation, {>
-    <Identifier, b><Operator, =><Integer, 2><Operator, *><Identifier, a><Punctuation, ;>
-    <Keyword, if><Punctuation, (><Identifier, b><Operator, ==><Integer, 2><Punctuation, )><Punctuation, {>
-        <Identifier, a><Operator, =><Identifier, b><Punctuation, ;>
-    <Punctuation, }>
-<Punctuation, }>
+Program
+  DeclStatement(a)
+    Integer(1)
+  DeclStatement(b)
+    Integer(0)
+  IfStatement
+    Condition
+      Equal
+        Identifier(a)
+        Integer(1)
+    ThenBlock
+      AssignStatement(b)
+        Mul
+          Identifier(a)
+          Identifier(a)
+      WhileStatement
+        Condition
+          Less
+            Identifier(b)
+            Integer(10)
+        Body
+          AssignStatement(b)
+            Mul
+              Identifier(b)
+              Integer(2)
+    ElseBlock
+      AssignStatement(b)
+        Mul
+          Integer(2)
+          Identifier(a)
+      IfStatement
+        Condition
+          Equal
+            Identifier(b)
+            Integer(2)
+        ThenBlock
+          AssignStatement(a)
+            Identifier(b)

@@ -3,7 +3,7 @@ pub mod file_input;
 #[cfg(test)]
 pub mod test_input;
 
-#[derive(Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct Cursor {
     pub line: usize,
     pub column: usize,
