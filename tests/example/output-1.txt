@@ -1,38 +1,38 @@
 Program
-  DeclStatement(a)
-    Integer(1)
-  DeclStatement(b)
-    Integer(0)
-  IfStatement
-    Condition
-      Equal
-        Identifier(a)
-        Integer(1)
-    ThenBlock
-      AssignStatement(b)
-        Mul
-          Identifier(a)
-          Identifier(a)
-      WhileStatement
-        Condition
-          Less
-            Identifier(b)
-            Integer(10)
-        Body
-          AssignStatement(b)
-            Mul
-              Identifier(b)
-              Integer(2)
-    ElseBlock
-      AssignStatement(b)
-        Mul
-          Integer(2)
-          Identifier(a)
-      IfStatement
-        Condition
-          Equal
-            Identifier(b)
-            Integer(2)
-        ThenBlock
-          AssignStatement(a)
-            Identifier(b)
+├── DeclStatement(a)
+│   └── Integer(1)
+├── DeclStatement(b)
+│   └── Integer(0)
+└── IfStatement
+    ├── Condition
+    │   └── Equal
+    │       ├── Identifier(a)
+    │       └── Integer(1)
+    ├── ThenBlock
+    │   ├── AssignStatement(b)
+    │   │   └── Mul
+    │   │       ├── Identifier(a)
+    │   │       └── Identifier(a)
+    │   └── WhileStatement
+    │       ├── Condition
+    │       │   └── Less
+    │       │       ├── Identifier(b)
+    │       │       └── Integer(10)
+    │       └── Body
+    │           └── AssignStatement(b)
+    │               └── Mul
+    │                   ├── Identifier(b)
+    │                   └── Integer(2)
+    └── ElseBlock
+        ├── AssignStatement(b)
+        │   └── Mul
+        │       ├── Integer(2)
+        │       └── Identifier(a)
+        └── IfStatement
+            ├── Condition
+            │   └── Equal
+            │       ├── Identifier(b)
+            │       └── Integer(2)
+            └── ThenBlock
+                └── AssignStatement(a)
+                    └── Identifier(b)

@@ -63,10 +63,11 @@ pub enum BinaryOperator {
 impl Program {
     pub fn preorder_string(&self) -> String {
         let mut lines = Vec::new();
-        push_line(&mut lines, 0, "Program");
+        lines.push("Program".to_string());
 
-        for stm in &self.stms {
-            stm.push_preorder(&mut lines, 1);
+        let n = self.stms.len();
+        for (i, stm) in self.stms.iter().enumerate() {
+            stm.push_preorder(&mut lines, "", i == n - 1);
         }
 
         lines.join("\n")
@@ -74,65 +75,76 @@ impl Program {
 }
 
 impl Statement {
-    fn push_preorder(&self, lines: &mut Vec<String>, depth: usize) {
+    fn push_preorder(&self, lines: &mut Vec<String>, prefix: &str, is_last: bool) {
         match self {
             Statement::Decl(stm) => {
-                push_line(lines, depth, &format!("DeclStatement({})", stm.name));
-                stm.init.push_preorder(lines, depth + 1);
+                let p = push_tree_line(lines, prefix, is_last, &format!("DeclStatement({})", stm.name));
+                stm.init.push_preorder(lines, &p, true);
             }
             Statement::Assign(stm) => {
-                push_line(lines, depth, &format!("AssignStatement({})", stm.name));
-                stm.value.push_preorder(lines, depth + 1);
+                let p = push_tree_line(lines, prefix, is_last, &format!("AssignStatement({})", stm.name));
+                stm.value.push_preorder(lines, &p, true);
             }
             Statement::If(stm) => {
-                push_line(lines, depth, "IfStatement");
-                push_line(lines, depth + 1, "Condition");
-                stm.cond.push_preorder(lines, depth + 2);
-                push_line(lines, depth + 1, "ThenBlock");
-                stm.then_block.push_preorder(lines, depth + 2);
+                let p = push_tree_line(lines, prefix, is_last, "IfStatement");
+                let has_else = stm.else_block.is_some();
 
+                // Condition (never the last child — ThenBlock always follows)
+                let cond_p = push_tree_line(lines, &p, false, "Condition");
+                stm.cond.push_preorder(lines, &cond_p, true);
+
+                // ThenBlock (last only if there's no ElseBlock)
+                let then_p = push_tree_line(lines, &p, !has_else, "ThenBlock");
+                stm.then_block.push_preorder(lines, &then_p);
+
+                // ElseBlock (always last, if present)
                 if let Some(block) = &stm.else_block {
-                    push_line(lines, depth + 1, "ElseBlock");
-                    block.push_preorder(lines, depth + 2);
+                    let else_p = push_tree_line(lines, &p, true, "ElseBlock");
+                    block.push_preorder(lines, &else_p);
                 }
             }
             Statement::While(stm) => {
-                push_line(lines, depth, "WhileStatement");
-                push_line(lines, depth + 1, "Condition");
-                stm.cond.push_preorder(lines, depth + 2);
-                push_line(lines, depth + 1, "Body");
-                stm.body.push_preorder(lines, depth + 2);
+                let p = push_tree_line(lines, prefix, is_last, "WhileStatement");
+
+                // Condition (not last — Body follows)
+                let cond_p = push_tree_line(lines, &p, false, "Condition");
+                stm.cond.push_preorder(lines, &cond_p, true);
+
+                // Body (last within WhileStatement)
+                let body_p = push_tree_line(lines, &p, true, "Body");
+                stm.body.push_preorder(lines, &body_p);
             }
         }
     }
 }
 
 impl Block {
-    fn push_preorder(&self, lines: &mut Vec<String>, depth: usize) {
+    fn push_preorder(&self, lines: &mut Vec<String>, prefix: &str) {
         if self.stms.is_empty() {
-            push_line(lines, depth, "Empty");
+            lines.push(format!("{}└── Empty", prefix));
             return;
         }
 
-        for stm in &self.stms {
-            stm.push_preorder(lines, depth);
+        let n = self.stms.len();
+        for (i, stm) in self.stms.iter().enumerate() {
+            stm.push_preorder(lines, prefix, i == n - 1);
         }
     }
 }
 
 impl Expression {
-    fn push_preorder(&self, lines: &mut Vec<String>, depth: usize) {
+    fn push_preorder(&self, lines: &mut Vec<String>, prefix: &str, is_last: bool) {
         match self {
             Expression::Identifier { name } => {
-                push_line(lines, depth, &format!("Identifier({})", name));
+                push_tree_line(lines, prefix, is_last, &format!("Identifier({})", name));
             }
             Expression::Integer { value } => {
-                push_line(lines, depth, &format!("Integer({})", value));
+                push_tree_line(lines, prefix, is_last, &format!("Integer({})", value));
             }
             Expression::Binary { oper, left, right } => {
-                push_line(lines, depth, oper.label());
-                left.push_preorder(lines, depth + 1);
-                right.push_preorder(lines, depth + 1);
+                let p = push_tree_line(lines, prefix, is_last, oper.label());
+                left.push_preorder(lines, &p, false);
+                right.push_preorder(lines, &p, true);
             }
         }
     }
@@ -149,8 +161,16 @@ impl BinaryOperator {
     }
 }
 
-fn push_line(lines: &mut Vec<String>, depth: usize, text: &str) {
-    lines.push(format!("{}{}", "  ".repeat(depth), text));
+/// Writes a tree line with connector (`├── ` or `└── `) and returns the
+/// continuation prefix for this node's children.
+fn push_tree_line(lines: &mut Vec<String>, prefix: &str, is_last: bool, text: &str) -> String {
+    let connector = if is_last { "└── " } else { "├── " };
+    lines.push(format!("{}{}{}", prefix, connector, text));
+    if is_last {
+        format!("{}    ", prefix)
+    } else {
+        format!("{}│   ", prefix)
+    }
 }
 
 #[cfg(test)]
@@ -172,7 +192,7 @@ mod tests {
 
         assert_eq!(
             program.preorder_string(),
-            "Program\n  DeclStatement(a)\n    Add\n      Integer(1)\n      Identifier(b)"
+            "Program\n└── DeclStatement(a)\n    └── Add\n        ├── Integer(1)\n        └── Identifier(b)"
         );
     }
 }
